@@ -1,14 +1,162 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-<title> 제목표시줄 제목이 들어가는 곳 </title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📝 To-Do List</title>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding-top: 50px;
+    }
+
+    .container {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #todo-input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    #add-btn {
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #add-btn:hover {
+      background: #43a047;
+    }
+
+    #todo-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .todo-item.completed span {
+      text-decoration: line-through;
+      color: #999;
+    }
+
+    .delete-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+  </style>
 </head>
-
 <body>
-안녕하세요.
-<h1>안녕하세요.</h1>
-<h4>안녕하세요.</h4>
-<p>안녕하세요.</p>
-</body>
+  <div class="container">
+    <h1>📝 To-Do List</h1>
+    <div class="input-area">
+      <input type="text" id="todo-input" placeholder="할 일을 입력하세요..." />
+      <button id="add-btn">추가</button>
+    </div>
+    <ul id="todo-list"></ul>
+  </div>
 
+  <script>
+    const input = document.getElementById('todo-input');
+    const addBtn = document.getElementById('add-btn');
+    const list = document.getElementById('todo-list');
+
+    let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+    function renderTodos() {
+      list.innerHTML = '';
+      todos.forEach((todo, index) => {
+        const li = document.createElement('li');
+        li.classList.add('todo-item');
+        if (todo.completed) li.classList.add('completed');
+
+        const span = document.createElement('span');
+        span.textContent = todo.text;
+        span.addEventListener('click', () => toggleComplete(index));
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '삭제';
+        delBtn.classList.add('delete-btn');
+        delBtn.addEventListener('click', () => deleteTodo(index));
+
+        li.append(span, delBtn);
+        list.appendChild(li);
+      });
+    }
+
+    function addTodo() {
+      const text = input.value.trim();
+      if (text === '') return;
+      todos.push({ text, completed: false });
+      input.value = '';
+      saveAndRender();
+    }
+
+    function deleteTodo(index) {
+      todos.splice(index, 1);
+      saveAndRender();
+    }
+
+    function toggleComplete(index) {
+      todos[index].completed = !todos[index].completed;
+      saveAndRender();
+    }
+
+    function saveAndRender() {
+      localStorage.setItem('todos', JSON.stringify(todos));
+      renderTodos();
+    }
+
+    addBtn.addEventListener('click', addTodo);
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addTodo();
+    });
+
+    renderTodos();
+  </script>
+</body>
 </html>
