@@ -1,162 +1,59 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📝 To-Do List</title>
-  <style>
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-      background: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      margin: 0;
-      padding-top: 50px;
+<div>Teachable Machine Image Model</div>
+<button type="button" onclick="init()">Start</button>
+<div id="webcam-container"></div>
+<div id="label-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<script type="text/javascript">
+    // More API functions here:
+    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
+
+    // the link to your model provided by Teachable Machine export panel
+    const URL = "https://teachablemachine.withgoogle.com/models/d4MkkHFnX/";
+
+    let model, webcam, labelContainer, maxPredictions;
+
+    // Load the image model and setup the webcam
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        // load the model and metadata
+        // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+        // or files from your local hard drive
+        // Note: the pose library adds "tmImage" object to your window (window.tmImage)
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        // Convenience function to setup a webcam
+        const flip = true; // whether to flip the webcam
+        webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
+        await webcam.setup(); // request access to the webcam
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // append elements to the DOM
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        labelContainer = document.getElementById("label-container");
+        for (let i = 0; i < maxPredictions; i++) { // and class labels
+            labelContainer.appendChild(document.createElement("div"));
+        }
     }
 
-    .container {
-      background: white;
-      padding: 20px 30px;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
+    async function loop() {
+        webcam.update(); // update the webcam frame
+        await predict();
+        window.requestAnimationFrame(loop);
     }
 
-    h1 {
-      text-align: center;
-      color: #333;
+    // run the webcam image through the image model
+    async function predict() {
+        // predict can take in an image, video or canvas html element
+        const prediction = await model.predict(webcam.canvas);
+        for (let i = 0; i < maxPredictions; i++) {
+            const classPrediction =
+                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            labelContainer.childNodes[i].innerHTML = classPrediction;
+        }
     }
-
-    .input-area {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    #todo-input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    #add-btn {
-      background: #4caf50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 10px 16px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-
-    #add-btn:hover {
-      background: #43a047;
-    }
-
-    #todo-list {
-      list-style: none;
-      padding: 0;
-    }
-
-    .todo-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .todo-item.completed span {
-      text-decoration: line-through;
-      color: #999;
-    }
-
-    .delete-btn {
-      background: #e74c3c;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 5px 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-    }
-
-    .delete-btn:hover {
-      background: #c0392b;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>📝 To-Do List</h1>
-    <div class="input-area">
-      <input type="text" id="todo-input" placeholder="할 일을 입력하세요..." />
-      <button id="add-btn">추가</button>
-    </div>
-    <ul id="todo-list"></ul>
-  </div>
-
-  <script>
-    const input = document.getElementById('todo-input');
-    const addBtn = document.getElementById('add-btn');
-    const list = document.getElementById('todo-list');
-
-    let todos = JSON.parse(localStorage.getItem('todos')) || [];
-
-    function renderTodos() {
-      list.innerHTML = '';
-      todos.forEach((todo, index) => {
-        const li = document.createElement('li');
-        li.classList.add('todo-item');
-        if (todo.completed) li.classList.add('completed');
-
-        const span = document.createElement('span');
-        span.textContent = todo.text;
-        span.addEventListener('click', () => toggleComplete(index));
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = '삭제';
-        delBtn.classList.add('delete-btn');
-        delBtn.addEventListener('click', () => deleteTodo(index));
-
-        li.append(span, delBtn);
-        list.appendChild(li);
-      });
-    }
-
-    function addTodo() {
-      const text = input.value.trim();
-      if (text === '') return;
-      todos.push({ text, completed: false });
-      input.value = '';
-      saveAndRender();
-    }
-
-    function deleteTodo(index) {
-      todos.splice(index, 1);
-      saveAndRender();
-    }
-
-    function toggleComplete(index) {
-      todos[index].completed = !todos[index].completed;
-      saveAndRender();
-    }
-
-    function saveAndRender() {
-      localStorage.setItem('todos', JSON.stringify(todos));
-      renderTodos();
-    }
-
-    addBtn.addEventListener('click', addTodo);
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') addTodo();
-    });
-
-    renderTodos();
-  </script>
-</body>
-</html>
+</script>
